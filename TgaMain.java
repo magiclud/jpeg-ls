@@ -16,6 +16,7 @@ public class TgaMain {
 
 	private int height;
 	private int width;
+	private 	int offset = 18;
 
 	public static void main(String[] args) {
 		TgaMain tga = new TgaMain();
@@ -149,21 +150,157 @@ public class TgaMain {
 		/********************************************************************/
 		BufferedImage buffy = new BufferedImage(width, height,
 				BufferedImage.TYPE_3BYTE_BGR);
-		buffy = readImage_ZeroEquation(buffy, readedBytes);
+		//buffy = readImage_ZeroEquation(buffy, readedBytes);
 
 		/******************************************************************************************** I ***/
 		// buffy = readImage_FirstEquation(buffy, readedBytes);
 
 		/****************************************************************************** wzor II ******/
 		// buffy = readImage_SecondEquation(buffy, readedBytes);
+		 
+		 /****************************************************************************** wzor III ******/
+		// buffy = readImage_ThirdEquation(buffy, readedBytes);
 
+		 /****************************************************************************** wzor IV ******/
+		 buffy = readImage_FourthEquation(buffy, readedBytes);
+		 
 		return buffy;
+	}
+
+	private BufferedImage readImage_FourthEquation(BufferedImage buffy,
+			int[] readedBytes) {
+		BufferedImage buf = buffy;
+		int byte_per_pixel = readedBytes[16] / 8;// = 3, bo 24/8
+		
+		for (int i = 0; i < buffy.getWidth(); i++) {
+			for (int j = 0; j < buffy.getHeight(); j = j + 2) {
+			
+				int i_tmp =i;
+				int j_tmp =j;
+				
+				int dex = (j * buffy.getWidth() + i) * byte_per_pixel + offset;
+				int b = readedBytes[dex];
+				int g = readedBytes[dex + 1];
+				int r = readedBytes[dex + 2];
+
+				int y = buffy.getHeight() - j - 1;
+
+				if(j_tmp==0){
+					j_tmp=1;
+				}
+				
+				int dex_j = ((j_tmp-1) * buffy.getWidth() + (i)) * byte_per_pixel
+						+ offset;
+				int b_j_1 = readedBytes[dex_j];
+				int g_j_1 = readedBytes[dex_j + 1];
+				int r_j_1 = readedBytes[dex_j + 2];
+				j_tmp=j;
+				if(i_tmp==0){
+					i_tmp=1;
+				}
+				int dex_i = ((j) * buffy.getWidth() + (i_tmp-1)) * byte_per_pixel
+						+ offset;
+				int b_i_1 = readedBytes[dex_i];
+				int g_i_1 = readedBytes[dex_i + 1];
+				int r_i_1 = readedBytes[dex_i + 2];
+			
+				if(j_tmp==0){
+					j_tmp=1;
+				}
+				int dex_i_j = ((j_tmp-1) * buffy.getWidth() + (i_tmp-1)) * byte_per_pixel
+						+ offset;
+				int b_i_j = readedBytes[dex_i_j];
+				int g_i_j = readedBytes[dex_i_j + 1];
+				int r_i_j = readedBytes[dex_i_j + 2];
+				
+				
+				int b2_div = b -( b_j_1+b_i_1-b_i_j);
+				int g2_div = g -( g_j_1+g_i_1-g_i_j);
+				int r2_div = r -( r_j_1+r_i_1-r_i_j);
+				
+				buf.setRGB(i, y, (r2_div << 16) + (g2_div << 8) + b2_div);
+			}
+		}
+		return buf;
+	}
+
+	private BufferedImage readImage_ThirdEquation(BufferedImage buffy,
+			int[] readedBytes) {
+		BufferedImage buf = buffy;
+		int byte_per_pixel = readedBytes[16] / 8;// = 3, bo 24/8
+		
+		for (int i = 0; i < buffy.getWidth(); i++) {
+			for (int j = 0; j < buffy.getHeight(); j = j + 2) {
+			
+				int dex = (j * buffy.getWidth() + i) * byte_per_pixel + offset;
+				int b = readedBytes[dex];
+				int g = readedBytes[dex + 1];
+				int r = readedBytes[dex + 2];
+
+				int y = buffy.getHeight() - j - 1;
+
+				if (i == 0) {
+					i = 1;
+				}
+				if(j==0){
+					j=1;
+				}
+				
+				int dex2 = ((j-1) * buffy.getWidth() + (i-1)) * byte_per_pixel
+						+ offset;
+				int b2 = readedBytes[dex2];
+				int g2 = readedBytes[dex2 + 1];
+				int r2 = readedBytes[dex2 + 2];
+				int b2_div = b - b2;
+				int g2_div = g - g2;
+				int r2_div = r - r2;
+				// System.out.print("("+b2+", "+ g2+", "+r2+") " );
+				buf.setRGB(i, y, (r2_div << 16) + (g2_div << 8) + b2_div);
+				// System.out.print("["+dex+"-"+dex2+"] ");
+			}
+			// System.out.print(" \n");
+		}
+		return buf;
+	}
+
+	private BufferedImage readImage_FirstEquation(BufferedImage buffy,
+			int[] readedBytes) {
+		BufferedImage buf = buffy;
+		int byte_per_pixel = readedBytes[16] / 8;// = 3, bo 24/8
+		
+		for (int i = 0; i < buffy.getWidth(); i++) {
+			for (int j = 0; j < buffy.getHeight(); j = j + 2) {
+			
+				int dex = (j * buffy.getWidth() + i) * byte_per_pixel + offset;
+				int b = readedBytes[dex];
+				int g = readedBytes[dex + 1];
+				int r = readedBytes[dex + 2];
+
+				int y = buffy.getHeight() - j - 1;
+
+				if (i == 0) {
+					i = 1;
+				}
+				int dex2 = ((j) * buffy.getWidth() + (i-1)) * byte_per_pixel
+						+ offset;
+				int b2 = readedBytes[dex2];
+				int g2 = readedBytes[dex2 + 1];
+				int r2 = readedBytes[dex2 + 2];
+				int b2_div = b - b2;
+				int g2_div = g - g2;
+				int r2_div = r - r2;
+				// System.out.print("("+b2+", "+ g2+", "+r2+") " );
+				buf.setRGB(i, y, (r2_div << 16) + (g2_div << 8) + b2_div);
+				// System.out.print("["+dex+"-"+dex2+"] ");
+			}
+			// System.out.print(" \n");
+		}
+		return buf;
 	}
 
 	private BufferedImage readImage_ZeroEquation(BufferedImage buffy,
 			int[] readedBytes) {
 		BufferedImage buffImg = buffy;
-		int offset = 18;
 		int byte_per_pixel = readedBytes[16] / 8;
 
 		for (int i = 0; i < buffy.getWidth(); i++) {
@@ -181,10 +318,9 @@ public class TgaMain {
 		return buffImg;
 	}
 
-	private BufferedImage readImage_FirstEquation(BufferedImage buffy,
+	private BufferedImage readImage_SecondEquation(BufferedImage buffy,
 			int[] readedBytes) {
 		BufferedImage buf = buffy;
-		int offset = 18;
 		int byte_per_pixel = readedBytes[16] / 8;// = 3, bo 24/8
 		System.out.println("readedBytes[16]: " + readedBytes[16]);
 		System.out.println("byte_per_pixel: " + byte_per_pixel);
