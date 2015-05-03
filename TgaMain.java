@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -20,6 +21,8 @@ public class TgaMain {
 	private Pixel[][] pixelsArray;
 	private Pixel[][] pixArrAfterEquation;
 	private int[] readedBytes;
+	private ArrayList<Double> entropySolutions;
+	
 
 	public static void main(String[] args) {
 		TgaMain tga = new TgaMain();
@@ -71,7 +74,6 @@ public class TgaMain {
 	 * readedBytes[16] = 0x20, why?
 	 */
 	private BufferedImage decodeTgaFile(int[] readedBytes) {
-
 		System.out.println(" nagówek - bajty: "); // printArray(header);
 		System.out.println("\n");
 
@@ -87,17 +89,49 @@ public class TgaMain {
 		BufferedImage buffy = new BufferedImage(width, height,
 				BufferedImage.TYPE_3BYTE_BGR);
 		// buffy = readImage_ZeroEquation(buffy, readedBytes);
+		entropySolutions = new ArrayList<Double>();
 		for (int i = 0; i < 9; i++) {
-			System.out.println("-------  nr: "+ i+"   ----------");
+			System.out.println("-------  nr: " + i + "   ----------");
 			int nrEquation = i;
 			buffy = getBufferedImageUsingEquation(buffy, nrEquation);
-			countEntropy();
+			countEntropy( );
 			System.out.println("------- ------------------ ----------");
 		}
+		findTheBestEntropy();
 		return buffy;
 	}
 
+	private void findTheBestEntropy() {
+		double bestEntropyImage =1000;
+		double  bestEntRed=1000, bestEntGreen=1000, bestEntBlue=1000;
+		int nrPredykBestEntImg=1000;
+		int nrPredBestEntRed=0, nrPredBestEntGreen=0, nrPredBestEntBlue=0;
+		for(int i=0; i< entropySolutions.size();i=i+4){
+			if(entropySolutions.get(i)<bestEntropyImage){
+				bestEntropyImage = entropySolutions.get(i);
+				nrPredykBestEntImg = i*2/8; //TODO ??!!
+			}
+			if(entropySolutions.get(i+1)< bestEntRed){
+				 bestEntRed = entropySolutions.get(i+1);
+				 nrPredBestEntRed = i*2/8;
+			}
+			if(entropySolutions.get(i+2)< bestEntGreen){
+				 bestEntGreen = entropySolutions.get(i+2);
+				 nrPredBestEntGreen = i*2/8;
+			}
+			if(entropySolutions.get(i+3)< bestEntBlue){
+				 bestEntBlue = entropySolutions.get(i+3);
+				 nrPredBestEntBlue = i*2/8;
+			}
+		}
+		System.out.println("Najlepsza metoda dla całego obrazu: "+nrPredykBestEntImg+ ", wartosć entropii: "+ bestEntropyImage );
+		System.out.println("Najlepsza metoda dla red: "+nrPredBestEntRed+ ", wartosć entropii: "+ bestEntRed );
+		System.out.println("Najlepsza metoda dla green: "+nrPredBestEntGreen+ ", wartosć entropii: "+ bestEntGreen );
+		System.out.println("Najlepsza metoda dla blue: "+nrPredBestEntBlue+ ", wartosć entropii: "+ bestEntBlue );
+	}
+
 	private void countEntropy() {// TODO
+
 		int counter = 0;
 		Map<Integer, Integer> byte_frequenc = new HashMap<Integer, Integer>();
 		Map<Integer, Integer> redFreq = new HashMap<Integer, Integer>();
@@ -118,14 +152,20 @@ public class TgaMain {
 				}
 			}
 		}
-		System.out.println("Entropia dla calego pliku: "
-				+ entropiaDlaPojedynczychBajtow(counter * 3, byte_frequenc));
-		System.out.println("Entropia czerwonych: "
-				+ entropiaDlaPojedynczychBajtow(counter, redFreq));
-		System.out.println("Entropia niebieskich: "
-				+ entropiaDlaPojedynczychBajtow(counter, blueFreq));
-		System.out.println("Entropia zielonych: "
-				+ entropiaDlaPojedynczychBajtow(counter, greenFreq));
+		double enropyWhole = entropiaDlaPojedynczychBajtow(counter * 3,
+				byte_frequenc);
+		double redEntropy = entropiaDlaPojedynczychBajtow(counter, redFreq);
+		double blueEntropy = entropiaDlaPojedynczychBajtow(counter, blueFreq);
+		double greenEntropy = entropiaDlaPojedynczychBajtow(counter, greenFreq);
+
+		System.out.println("Entropia dla calego pliku: " + enropyWhole);
+		System.out.println("Entropia czerwonych: " + redEntropy);
+		System.out.println("Entropia niebieskich: " + blueEntropy);
+		System.out.println("Entropia zielonych: " + greenEntropy);
+		entropySolutions.add(enropyWhole);
+		entropySolutions.add(redEntropy);
+		entropySolutions.add(greenEntropy);
+		entropySolutions.add(blueEntropy);
 	}
 
 	public double entropiaDlaPojedynczychBajtow(int length,
