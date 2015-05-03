@@ -37,21 +37,6 @@ public class TgaMain {
 		frame.setSize(900, 600);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
-
-		/************************ ENTROPY *********************/
-		/****************** Ktora entropia jest poprawnie liczona? *****************/
-		// get bytes without
-		// head and foot
-		Map<Integer, Integer> frequencyBytes = tga
-				.countFrequencyReadedBytes(imageBitMap);
-		Map<Integer, Integer> frequencyBytes2 = tga
-				.countFrequencyReadedBytes2(imageBitMap);
-		double imageEntropy = tga.imageEntropy(imageBitMap, frequencyBytes);
-		double imageEntropy2 = tga.imageEntropy(imageBitMap, frequencyBytes2);
-		System.out.println("Entropia: " + imageEntropy + "  :   "
-				+ imageEntropy2);
-		/************************************************ */
-
 	}
 
 	private int[] setImageBitMap(int[] readedBytes) {
@@ -61,25 +46,6 @@ public class TgaMain {
 			imageBitMap[i++] = readedBytes[k];
 		}
 		return imageBitMap;
-	}
-
-	private double imageEntropy(int[] readedBytes,
-			Map<Integer, Integer> frequencyBytes) {
-		System.out.println("liczba wystąpień wszystkich symboli: "
-				+ readedBytes.length);
-
-		// Print the content of the hashMap
-		Set<Entry<Integer, Integer>> hashSet = frequencyBytes.entrySet();
-		for (int i = 0; i < readedBytes.length; i++) {
-		}
-		double entropia = 8;
-		for (Entry entry : hashSet) {
-			double waga = (int) entry.getValue() / (double) readedBytes.length;
-			entropia += waga * Math.log(1 / waga);
-			// System.out.println("bajt = " + entry.getKey() + ", waga (pi)= "
-			// + waga);
-		}
-		return entropia;
 	}
 
 	public Map<Integer, Integer> countFrequencyReadedBytes(int[] readedBytes) {
@@ -96,40 +62,6 @@ public class TgaMain {
 				byte_frequency.put(readedBytes[i], 1);
 			}
 
-		}
-		return byte_frequency;
-	}
-
-	public Map<Integer, Integer> countFrequencyReadedBytes2(int[] readedBytes) {
-		// Key - byte, Value - liczba wystąpień
-		Map<Integer, Integer> byte_frequency = new HashMap<Integer, Integer>();
-		// omijamy naglowek i stopke
-		// for (int i = 18; i < readedBytes.length - 26; i++) {
-		// System.out.println("Readed byte: " + readedByte);
-
-		for (int i = 0; i < width; i++) {
-
-			for (int j = 0; j < height; j++) {
-				int dex = (j * width + i) * 3 + 18;
-				if (dex >= readedBytes.length) {
-					break;
-				}
-
-				int bytePix = readedBytes[dex];
-				// int g = readedBytes[dex + 1];
-				// int r = readedBytes[dex + 2];
-				// int rgbValue = (r << 16) + (g << 8) + b;
-				// int red = r << 16;
-				// int green = (g << 8);
-				if (!byte_frequency.isEmpty()
-						&& byte_frequency.containsKey(bytePix)) {
-					byte_frequency
-							.put(bytePix, byte_frequency.get(bytePix) + 1);
-				} else {
-					byte_frequency.put(bytePix, 1);
-				}
-			}
-			// System.out.println("");
 		}
 		return byte_frequency;
 	}
@@ -155,9 +87,71 @@ public class TgaMain {
 		BufferedImage buffy = new BufferedImage(width, height,
 				BufferedImage.TYPE_3BYTE_BGR);
 		// buffy = readImage_ZeroEquation(buffy, readedBytes);
-		int nrEquation = 2;
-		buffy = getBufferedImageUsingEquation(buffy, nrEquation);
+		for (int i = 0; i < 9; i++) {
+			System.out.println("-------  nr: "+ i+"   ----------");
+			int nrEquation = i;
+			buffy = getBufferedImageUsingEquation(buffy, nrEquation);
+			countEntropy();
+			System.out.println("------- ------------------ ----------");
+		}
 		return buffy;
+	}
+
+	private void countEntropy() {// TODO
+		int counter = 0;
+		Map<Integer, Integer> byte_frequenc = new HashMap<Integer, Integer>();
+		Map<Integer, Integer> redFreq = new HashMap<Integer, Integer>();
+		Map<Integer, Integer> greenFreq = new HashMap<Integer, Integer>();
+		Map<Integer, Integer> blueFreq = new HashMap<Integer, Integer>();
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
+				int dex = (j * width + i) * 3 + 18;
+				if (dex < imageBitMap.length) {
+					Pixel pixel = pixArrAfterEquation[i][j];
+					addToArrayFrequency(byte_frequenc, pixel.getBlue());
+					addToArrayFrequency(byte_frequenc, pixel.getRed());
+					addToArrayFrequency(byte_frequenc, pixel.getGreen());
+					addToArrayFrequency(blueFreq, pixel.getBlue());
+					addToArrayFrequency(redFreq, pixel.getRed());
+					addToArrayFrequency(greenFreq, pixel.getGreen());
+					counter++;
+				}
+			}
+		}
+		System.out.println("Entropia dla calego pliku: "
+				+ entropiaDlaPojedynczychBajtow(counter * 3, byte_frequenc));
+		System.out.println("Entropia czerwonych: "
+				+ entropiaDlaPojedynczychBajtow(counter, redFreq));
+		System.out.println("Entropia niebieskich: "
+				+ entropiaDlaPojedynczychBajtow(counter, blueFreq));
+		System.out.println("Entropia zielonych: "
+				+ entropiaDlaPojedynczychBajtow(counter, greenFreq));
+	}
+
+	public double entropiaDlaPojedynczychBajtow(int length,
+			Map<Integer, Integer> czestotliwoscSymbolu) {
+		// System.out.println("liczba wystąpień wszystkich symboli: "
+		// + wczytaneBajty.length);
+
+		Set<Entry<Integer, Integer>> hashSet = czestotliwoscSymbolu.entrySet();
+
+		double entropia = 0;
+		for (Entry entry : hashSet) {
+			double waga = (int) entry.getValue() / (double) length;
+			entropia += waga * Math.log(1 / waga);
+			// System.out.println("bajt = " + entry.getKey() + ", waga (pi)= "
+			// + waga);
+		}
+		return entropia;
+	}
+
+	private void addToArrayFrequency(Map<Integer, Integer> byte_frequenc,
+			int key) {
+		if (!byte_frequenc.isEmpty() && byte_frequenc.containsKey(key)) {
+			byte_frequenc.put(key, byte_frequenc.get(key) + 1);
+		} else {
+			byte_frequenc.put(key, 1);
+		}
 	}
 
 	private void createPixelsArray() {
@@ -167,14 +161,14 @@ public class TgaMain {
 
 				int dex = (j * width + i) * 3 + 18;// 3->byte per pixel, 18->
 													// offset
-				// if (dex < imageBitMap.length) {
-				int b = readedBytes[dex];
-				int g = readedBytes[dex + 1];
-				int r = readedBytes[dex + 2];
-				int y = height - j - 1;
-				pixel = new Pixel(i, y, b, g, r);
-				pixelsArray[i][j] = pixel;
-				// }
+				if (dex < imageBitMap.length) {
+					int b = readedBytes[dex];
+					int g = readedBytes[dex + 1];
+					int r = readedBytes[dex + 2];
+					int y = height - j - 1;
+					pixel = new Pixel(i, y, b, g, r);
+					pixelsArray[i][j] = pixel;
+				}
 			}
 		}
 	}
@@ -188,35 +182,39 @@ public class TgaMain {
 
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
-				if (i == 0) {
-					west.setBlue(0);
-					west.setGreen(0);
-					west.setRed(0);
-				} else {
-					west.setBlue(pixelsArray[i - 1][j].getBlue());
-					west.setGreen(pixelsArray[i - 1][j].getGreen());
-					west.setRed(pixelsArray[i - 1][j].getRed());
+				int dex = (j * width + i) * 3 + 18;
+				if (dex < imageBitMap.length) {
+					if (i == 0) {
+						west.setBlue(0);
+						west.setGreen(0);
+						west.setRed(0);
+					} else {
+						west.setBlue(pixelsArray[i - 1][j].getBlue());
+						west.setGreen(pixelsArray[i - 1][j].getGreen());
+						west.setRed(pixelsArray[i - 1][j].getRed());
+					}
+					if (j == 0) {
+						north.setBlue(0);
+						north.setGreen(0);
+						north.setRed(0);
+					} else {
+						north.setBlue(pixelsArray[i][j - 1].getBlue());
+						north.setGreen(pixelsArray[i][j - 1].getGreen());
+						north.setRed(pixelsArray[i][j - 1].getRed());
+					}
+					if (j == 0 || i == 0) {
+						northWest.setBlue(0);
+						northWest.setGreen(0);
+						northWest.setRed(0);
+					} else {
+						northWest.setBlue(pixelsArray[i - 1][j - 1].getBlue());
+						northWest
+								.setGreen(pixelsArray[i - 1][j - 1].getGreen());
+						northWest.setRed(pixelsArray[i - 1][j - 1].getRed());
+					}
+					bufImg = runEquation(i, j, north, west, northWest,
+							nrEquation, buffy);
 				}
-				if (j == 0) {
-					north.setBlue(0);
-					north.setGreen(0);
-					north.setRed(0);
-				} else {
-					north.setBlue(pixelsArray[i][j - 1].getBlue());
-					north.setGreen(pixelsArray[i][j - 1].getGreen());
-					north.setRed(pixelsArray[i][j - 1].getRed());
-				}
-				if (j == 0 || i == 0) {
-					northWest.setBlue(0);
-					northWest.setGreen(0);
-					northWest.setRed(0);
-				} else {
-					northWest.setBlue(pixelsArray[i - 1][j - 1].getBlue());
-					northWest.setGreen(pixelsArray[i - 1][j - 1].getGreen());
-					northWest.setRed(pixelsArray[i - 1][j - 1].getRed());
-				}
-				bufImg = runEquation(i, j, north, west, northWest, nrEquation,
-						buffy);
 			}
 			// System.out.print(" \n");
 		}
@@ -225,10 +223,14 @@ public class TgaMain {
 
 	private BufferedImage runEquation(int i, int j, Pixel north, Pixel west,
 			Pixel northWest, int nrEquation, BufferedImage buffy) {
+
 		if (nrEquation == 0) {/* only read */
 			Pixel pix = pixelsArray[i][j];
 			buffy.setRGB(i, pix.getY(),
 					pix.getBlue() + pix.getGreen() + pix.getRed());
+
+			pixArrAfterEquation[i][j] = new Pixel(pix.getRed(), pix.getBlue(),
+					pix.getGreen());
 			return buffy;
 
 		} else if (nrEquation == 1) {/* I[i-1,j] */
